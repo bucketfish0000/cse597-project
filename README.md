@@ -1,4 +1,4 @@
-# Computer Vision Assignment: Serve a Model via Local API + Raspberry Pi Client
+# Homework 4: Computer Vision Assignment: Serve a Model via Local API 
 
 
 **Estimated effort:** 5-7 hours
@@ -46,7 +46,6 @@ cse597-project/
 ├── README.md
 ├── Getting Started.pdf
 ├── requirements.txt
-├── client.py         # /!\ MODIFY /!\ Part 4
 ├── venv/               
 ├── app/
 │   ├── api.py        # /!\ MODIFY /!\ Part 3
@@ -98,19 +97,23 @@ cse597-project/
 
 ---
 
-## Part 0 — Environment & Setup (5 pts)
+## Part 0 — Environment & Setup (10 pts)
 
 - Read through and follow the entire Getting Started PDF
 - Python, VSCode, a virtual environment, and git should be set up and the dataset and the project repository should be downloaded onto your local computer
 - Points will be awarded if any parts of the project are submitted 
+- Contact Sabrina with questions
 
-## Part 1 — Model Training (20 pts)
+## Part 1 — Model Training (30 pts)
 
- In `notebooks/train.ipynb`, fine‑tune a compact model on the `object_detection` dataset provided with the assignment. 
+ In `notebooks/train.ipynb`, fine‑tune a YOLO model on the `object_detection` dataset provided with the assignment. 
+
+
+ Additionally, there are questions about the dataset and about the model training that you need to answer.
 
 ---
 
-## Part 2 — `model.py`: Inference Contract (25 pts)
+## Part 2 — `model.py`: Inference Wrapper (30 pts)
 
 Create an interface wrapper around your model so the API and tests don’t depend on framework internals.
 
@@ -130,7 +133,6 @@ class InferenceModel:
     def predict(self, image_bgr: np.ndarray) -> List[Dict[str, Any]]:
         """Return a list of detections or classifications.
         For detection: [{"label": str, "score": float, "bbox": [x1,y1,x2,y2]}]
-        Coordinates are in **original image pixels**.
         """
         ...
 ```
@@ -139,10 +141,10 @@ class InferenceModel:
 
 - **Deterministic** output for a given image.
 - Graceful errors with helpful messages (bad image, wrong shape, missing weights).
-- Answer questions 
+- Answer questions in `report.md`
 ---
 
-## Part 3 — `api.py`: FastAPI Service (25 pts)
+## Part 3 — `api.py`: FastAPI Service (30 pts)
 
 Implement a local HTTP service that wraps `InferenceModel`.
 
@@ -184,80 +186,22 @@ if __name__ == "__main__":
 
 **Run:** `uvicorn app.api:app --host 0.0.0.0 --port 8000 --reload`
 
+**Requirements:**
+
+- Be able to give a demo of the server hosted locally 
+- Handle errors 
+- Answer questions in `report.md`
 
 ---
-
-## Part 4 — Raspberry Pi Client (25 pts)
-
-Write `client/pi_client.py` that captures frames and POSTs to the API.
-
-**Skeleton:**
-
-```python
-# client/pi_client.py
-import time
-import cv2
-import requests
-
-API_URL = "http://<laptop-ip>:8000/predict"  # replace with server IP
-CAM_INDEX = 0
-
-cap = cv2.VideoCapture(CAM_INDEX)
-assert cap.isOpened(), "Camera not found"
-
-try:
-    while True:
-        ok, frame = cap.read()
-        if not ok:
-            continue
-        _, buf = cv2.imencode(".jpg", frame, [int(cv2.IMWRITE_JPEG_QUALITY), 85])
-        files = {"image": ("frame.jpg", buf.tobytes(), "image/jpeg")}
-        t0 = time.perf_counter()
-        r = requests.post(API_URL, files=files, timeout=5)
-        dt = (time.perf_counter() - t0) * 1000
-        r.raise_for_status()
-        preds = r.json()
-        print(f"Latency: {dt:.1f} ms | preds: {preds}")
-        # OPTIONAL: draw boxes and show window
-        # for det in preds: ...
-        # cv2.imshow("pi", frame); cv2.waitKey(1)
-except KeyboardInterrupt:
-    pass
-finally:
-    cap.release()
-```
-
-
----
-
 
 **Breakdown:**
 
-- Part 0 (5) + Part 1 (20) + Part 2 (25) + Part 3 (25) + Part 4 (25)  = **100 pts**
+- Part 0 (10) + Part 1 (30) + Part 2 (30) + Part 3 (30)  = **100 pts**
 
 ---
 
-**Deliverables:** code + short write‑up (1–2 paragraphs) + demo in class
+**Deliverables:** train.ipynb & write ups in this notebook + api.py + model.py + report.md 
 
+*This needs to be completed in a thorough way for the next section of the course. Please contact **Sabrina** with questions and concerns*
 
-## Suggested Requirements File
-
-```
-fastapi
-uvicorn
-pydantic
-numpy
-opencv-python
-pillow
-requests
-# choose one stack
-# torch
-torch
-# OR onnxruntime
-# onnxruntime
-# OR tflite-runtime (on Pi)
-# tflite-runtime
-pytest
-ruff
-```
 
