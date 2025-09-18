@@ -27,16 +27,6 @@ By the end you can:
 
 ---
 
-## Prerequisites & Materials
-
-- Python 3.10+; Conda or venv.
-- **FastAPI** + `uvicorn`, `pydantic`, `opencv-python`, `numpy`, `Pillow`, `requests`.
-- **Picar-X** (given in class)
-
-> Do not expect to have access to a GPU due to limited resources
-
----
-
 ## Repository Layout 
 
 ```
