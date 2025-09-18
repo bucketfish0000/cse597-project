@@ -1,7 +1,7 @@
 # Computer Vision Assignment: Serve a Model via Local API + Raspberry Pi Client
 
 
-**Estimated effort:** 3-5 hours
+**Estimated effort:** 5-7 hours
 
 ---
 
@@ -9,12 +9,12 @@
 
 You’ll build an end‑to‑end, industry‑style inference pipeline:
 
-1. **Train or select** a computer vision model.
+1. **Train** a computer vision model.
 2. **Package it in** with a clean, testable interface.
 3. **Expose a local HTTP API (**``**)** so any device (a Raspberry Pi robot) can request predictions.
 4. **Write a Raspberry Pi client** that captures images and posts them to your API.
 
-This mirrors how models are deployed in practice: the robot sends frames to a nearby machine hosting the model service (“on‑the‑edge” inference). You’ll measure latency and make design tradeoffs.
+This mirrors how models are deployed in practice: the robot sends frames to a nearby machine hosting the model service (“on‑the‑edge” inference).
 
 ---
 
@@ -31,7 +31,6 @@ By the end you can:
 ## Prerequisites & Materials
 
 - Python 3.10+; Conda or venv.
-- One of: **PyTorch** (preferred) or **TensorFlow/TFLite**
 - **FastAPI** + `uvicorn`, `pydantic`, `opencv-python`, `numpy`, `Pillow`, `requests`.
 - **Picar-X** (given in class)
 
@@ -39,25 +38,75 @@ By the end you can:
 
 ---
 
-## Repository Layout (starter suggestion)
+## Repository Layout 
 
 ```
-
+cse597-project/
+├── .gitignore
+├── README.md
+├── Getting Started.pdf
+├── requirements.txt
+├── client.py         # /!\ MODIFY /!\ Part 4
+├── venv/               
+├── app/
+│   ├── api.py        # /!\ MODIFY /!\ Part 3
+│   └── model.py      # /!\ MODIFY /!\ Part 2
+├── data/             # add this folder from unzipping dataset
+│   ├── README.roboflow.txt
+│   ├── data.yaml
+│   ├── train/
+│   │   ├── images/
+│   │   ├── labels/
+│   │   └── labels.cache
+│   ├── valid/
+│   │   ├── images/
+│   │   ├── labels/
+│   │   └── labels.cache
+│   └── test/
+│       ├── images/
+│       └── labels/
+├── notebooks/
+│   ├── train.ipynb # /!\ MODIFY /!\ Part 1
+│   └── yolov8n.pt
+├── runs/           # this folder is created from running train.ipynb
+│   └── detect/
+│       ├── train/
+│       │   ├── weights/
+│       │   │   ├── best.pt
+│       │   │   └── last.pt
+│       │   ├── BoxF1_curve.png
+│       │   ├── BoxPR_curve.png
+│       │   ├── BoxP_curve.png
+│       │   ├── BoxR_curve.png
+│       │   ├── args.yaml
+│       │   ├── confusion_matrix.png
+│       │   ├── confusion_matrix_normalized.png
+│       │   ├── labels.jpg
+│       │   ├── results.csv
+│       │   ├── results.png
+│       │   ├── train_batch0.jpg
+│       │   ├── train_batch1.jpg
+│       │   ├── train_batch2.jpg
+│       │   ├── val_batch0_labels.jpg
+│       │   ├── val_batch0_pred.jpg
+│       │   ├── val_batch1_labels.jpg
+│       │   ├── val_batch1_pred.jpg
+│       │   ├── val_batch2_labels.jpg
+│       └──  └── val_batch2_pred.jpg
+└── .vscode/
 ```
 
 ---
 
 ## Part 0 — Environment & Setup (5 pts)
 
-- Create and activate a Python environment.
-- Install dependencies. 
+- Read through and follow the entire Getting Started PDF
+- Python, VSCode, a virtual environment, and git should be set up and the dataset and the project repository should be downloaded onto your local computer
+- Points will be awarded if any parts of the project are submitted 
 
 ## Part 1 — Model Training (20 pts)
 
- In `notebooks/train.ipynb`, fine‑tune a compact model on a small insect vs. non‑insect dataset (or 2–5 classes). Save weights to `models/` with a short provenance note in `models/README.md`.
-
-
-Scoring emphasizes **fitness for edge** (size, speed) and **clear documentation**.
+ In `notebooks/train.ipynb`, fine‑tune a compact model on the `object_detection` dataset provided with the assignment. 
 
 ---
 
@@ -75,18 +124,12 @@ import numpy as np
 class InferenceModel:
     def __init__(self, weights_path: str, device: str = "cpu"):
         """Load weights and initialize runtime.
-        Must set self.input_size (w, h) and self.labels (list or dict).
         """
-        ...
-
-    def preprocess(self, image_bgr: np.ndarray) -> Any:
-        """Resize/normalize and convert to the model's input tensor."""
         ...
 
     def predict(self, image_bgr: np.ndarray) -> List[Dict[str, Any]]:
         """Return a list of detections or classifications.
         For detection: [{"label": str, "score": float, "bbox": [x1,y1,x2,y2]}]
-        For classification: [{"label": str, "score": float}]
         Coordinates are in **original image pixels**.
         """
         ...
@@ -96,6 +139,7 @@ class InferenceModel:
 
 - **Deterministic** output for a given image.
 - Graceful errors with helpful messages (bad image, wrong shape, missing weights).
+- Answer questions 
 ---
 
 ## Part 3 — `api.py`: FastAPI Service (25 pts)

@@ -18,7 +18,9 @@ async def health():
 @app.post("/predict", response_model=PredictionResponse)
 async def predict(request: PredictionRequest):
     try:
-        result = model.predict(request.data)
-        return {"prediction": result}
+        # -- student add code here --
+        print("Add code here")
+        # -- end student code --
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
