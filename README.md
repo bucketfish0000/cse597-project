@@ -12,7 +12,6 @@ You’ll build an end‑to‑end, industry‑style inference pipeline:
 1. **Train** a computer vision model.
 2. **Package it in** with a clean, testable interface.
 3. **Expose a local HTTP API (**``**)** so any device (a Raspberry Pi robot) can request predictions.
-4. **Write a Raspberry Pi client** that captures images and posts them to your API.
 
 This mirrors how models are deployed in practice: the robot sends frames to a nearby machine hosting the model service (“on‑the‑edge” inference).
 
@@ -22,9 +21,9 @@ This mirrors how models are deployed in practice: the robot sends frames to a ne
 
 By the end you can:
 
-- Implement a **stable inference API** around a computer vision model.
+- **Train a YOLO model** on a simple dataset
+- Implement a **stable inference API** around a custom YOLO model.
 - Serve predictions with a **FastAPI** endpoint and validate inputs/outputs.
-- **Stream images** from a Raspberry Pi to an API, and handle errors/latency.
 
 ---
 
@@ -48,9 +47,10 @@ cse597-project/
 ├── requirements.txt
 ├── venv/               
 ├── app/
-│   ├── api.py        # /!\ MODIFY /!\ Part 3
-│   └── model.py      # /!\ MODIFY /!\ Part 2
-├── data/             # add this folder from unzipping dataset
+│   ├── report.md     # /!\ MODIFY /!\ Part 2 & 3
+│   ├── model.py      # /!\ MODIFY /!\ Part 2
+│   └── api.py        # /!\ MODIFY /!\ Part 3
+├── data/             # dataset unzipped here 
 │   ├── README.roboflow.txt
 │   ├── data.yaml
 │   ├── train/
@@ -161,11 +161,14 @@ import io
 import cv2
 import uvicorn
 import numpy as np
+import os
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from .model import InferenceModel
 
 app = FastAPI(title="Edge CV API")
-model = InferenceModel("models/model.pt", device="cpu")
+
+MODEL_WEIGHTS = os.path.join(os.path.dirname(__file__), '..', 'runs', 'detect', 'train', 'weights', 'best.pt')
+model = InferenceModel(weights_path=MODEL_WEIGHTS)
 
 @app.get("/health")
 def health():

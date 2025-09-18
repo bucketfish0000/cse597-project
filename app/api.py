@@ -1,26 +1,33 @@
-from fastapi import FastAPI, HTTPException, Request
-from pydantic import BaseModel
+import io
+import cv2
+import uvicorn
+import numpy as np
+import os
+from fastapi import FastAPI, File, UploadFile, HTTPException
+from .model import InferenceModel
 
-import model  # Assumes model.py is in the same directory
+app = FastAPI(title="Edge CV API")
 
-app = FastAPI()
-
-class PredictionRequest(BaseModel):
-    data: list  # Adjust type as needed for your model
-
-class PredictionResponse(BaseModel):
-    prediction: list  # Adjust type as needed for your model
+MODEL_WEIGHTS = os.path.join(os.path.dirname(__file__), '..', 'runs', 'detect', 'train', 'weights', 'best.pt') # edit `train` if you are using train2 etc
+model = InferenceModel(weights_path=MODEL_WEIGHTS)
 
 @app.get("/health")
-async def health():
+def health():
     return {"status": "ok"}
 
-@app.post("/predict", response_model=PredictionResponse)
-async def predict(request: PredictionRequest):
+@app.post("/predict")
+def predict(image: UploadFile = File(...)):
     try:
-        # -- student add code here --
-        print("Add code here")
-        # -- end student code --
+        ## -- STUDENT CODE HERE --
+        print("Received file:", image.filename)
+        ## -- STUDENT CODE END -- 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e))
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000)
+
+
+# To run the app from root directory: uvicorn app.api --reload
+# Test by going to 127.0.0.1:8000/docs in your browser
     
