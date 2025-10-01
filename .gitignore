@@ -6,3 +6,5 @@ example_app/
 __pycache__/
 .DS_Store
 .vscode/
+merged/
+merged_ds/

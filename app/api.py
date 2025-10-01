@@ -28,6 +28,6 @@ if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
 
 
-# To run the app from root directory: uvicorn app.api --reload
+# To run the app from root directory: uvicorn app.api:app --reload
 # Test by going to 127.0.0.1:8000/docs in your browser
     
