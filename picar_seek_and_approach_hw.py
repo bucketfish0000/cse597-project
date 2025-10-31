@@ -6,29 +6,29 @@ from vilib import Vilib
 from PIL import Image
 
 # ===================== CONFIG =====================
-LAPTOP_IP   = os.getenv("LAPTOP_IP", "192.XXX.XX.XX")
-API_PORT    = int(os.getenv("API_PORT", "XXXX"))
+LAPTOP_IP   = os.getenv("LAPTOP_IP", "172.20.10.13")
+API_PORT    = int(os.getenv("API_PORT", "8000"))
 API_URL     = f"http://{LAPTOP_IP}:{API_PORT}/predict"
 
-TARGET_LABELS = os.getenv("TARGET_LABELS", "XXXXX")  # e.g., "person,cat"; empty = any
+TARGET_LABELS = os.getenv("TARGET_LABELS", "caterpillar")  # e.g., "person,cat"; empty = any
 CONF_THRESH   = float(os.getenv("CONF_THRESH", "0.5"))
 
 # Scan behavior
-SCAN_SPEED        = int(os.getenv("SCAN_SPEED", "XX"))    # drive speed while scanning
-SCAN_STEER_DEG    = int(os.getenv("SCAN_STEER_DEG", "-XX")) # left circle (negative left)
-PAN_MIN, PAN_MAX  = -XX, XX
-PAN_STEP_DEG      = X
-PAN_DWELL_SEC     = X ~50 ms
+SCAN_SPEED        = int(os.getenv("SCAN_SPEED", "20"))    # drive speed while scanning
+SCAN_STEER_DEG    = int(os.getenv("SCAN_STEER_DEG", "-20")) # left circle (negative left)
+PAN_MIN, PAN_MAX  = -60, 60
+PAN_STEP_DEG      = 20
+PAN_DWELL_SEC     = 0.05
 
 # Approach behavior
-APPROACH_SPEED    = int(os.getenv("APPROACH_SPEED", "XX"))
-STEER_KP          = float(os.getenv("STEER_KP", "XX"))   # gain mapping bearing -> steering
-MAX_STEER_DEG     = XX
+APPROACH_SPEED    = int(os.getenv("APPROACH_SPEED", "70"))
+STEER_KP          = float(os.getenv("STEER_KP", "1"))   # gain mapping bearing -> steering
+MAX_STEER_DEG     = 30
 
 # Termination / safety heuristics
-AREA_NEAR_THRESH  = float(os.getenv("AREA_NEAR_THRESH", "XX"))  # relative box area considered "close"
-LOST_TIMEOUT_SEC  = float(os.getenv("LOST_TIMEOUT_SEC", "XX"))  # time if robot lost target
-SNAPSHOT_INTERVAL = float(os.getenv("SNAPSHOT_INTERVAL", "XX")) # seconds between snapshots
+AREA_NEAR_THRESH  = float(os.getenv("AREA_NEAR_THRESH", "0.3"))  # relative box area considered "close"
+LOST_TIMEOUT_SEC  = float(os.getenv("LOST_TIMEOUT_SEC", "1"))  # time if robot lost target
+SNAPSHOT_INTERVAL = float(os.getenv("SNAPSHOT_INTERVAL", "0.2")) # seconds between snapshots
 
 # Where Vilib stores photos
 PHOTO_DIR = os.path.join(os.path.expanduser(f'~{os.getlogin()}'), "Pictures", "picar-x")
@@ -38,7 +38,7 @@ pathlib.Path(PHOTO_DIR).mkdir(parents=True, exist_ok=True)
 def vilib_take_photo(path_dir=PHOTO_DIR):
     ts = strftime('%Y-%m-%d-%H-%M-%S', localtime(time.time()))
     name = f'photo_{ts}'
-    Vilib.XXXXX(name, path_dir) # Which function to take phote
+    Vilib.take_photo(name, path_dir) # Which function to take phote
     return os.path.join(path_dir, f"{name}.jpg")
 
 def post_image_to_api(jpg_path):
@@ -72,8 +72,8 @@ def pick_target(pred_json, prefer_labels):
 
 def bbox_center_and_area(bbox, img_w, img_h):
     x1,y1,x2,y2 = bbox
-    cx = (x1+x2)/XX   
-    cy = (XX+XX)/2.0        # How to find center x and ceter y? 
+    cx = (x1+x2)/2.0  
+    cy = (y1+y2)/2.0        # How to find center x and ceter y? 
     area = max(0.0,(x2-x1)) * max(0.0,(y2-y1))
     rel_area = area / float(img_w*img_h)
     return cx, cy, rel_area
@@ -89,7 +89,7 @@ def main():
     px = Picarx()
 
     # Start Vilib camera UI
-    Vilib.XXXXX(vflip=False, hflip=False)       # How to start camera?
+    Vilib.camera_start(vflip=False, hflip=False)       # How to start camera?
     Vilib.display(local=True, web=True)
     time.sleep(1.5)
 
@@ -104,13 +104,13 @@ def main():
             loop_t0 = time.time()
 
             # 1) Take snapshot via Vilib using previously defined function
-            jpg_path = XXXXXXX(PHOTO_DIR)
+            jpg_path = vilib_take_photo(path_dir=PHOTO_DIR)
 
             # 2) Send to API & parse
             target = None
             try:
-                resp = XXXXXXX(jpg_path)        # Post image to API using previously defined function
-                target = XXXXXXX(resp, prefer_labels)          # Use previously defined function to find target
+                resp = post_image_to_api(jpg_path)        # Post image to API using previously defined function
+                target = pick_target(resp, prefer_labels)          # Use previously defined function to find target
             except Exception as e:
                 print("[WARN] POST failed:", e)
 
@@ -130,14 +130,14 @@ def main():
                 offset_px = (cx - (w/2)) / (w/2)  # -1 .. +1
                 bearing_deg = cur_pan + offset_px * 20.0  # 20° ~ rough horiz FOV contribution
 
-                steer_cmd = clamp(int(XXXXXXX * XXXXX), -MAX_STEER_DEG, MAX_STEER_DEG) # Calculate the steering command using steering control gain and object bearing angle (K * ang)
+                steer_cmd = clamp(int(STEER_KP * bearing_deg), -MAX_STEER_DEG, MAX_STEER_DEG) # Calculate the steering command using steering control gain and object bearing angle (K * ang)
 
                 if mode != "APPROACH":
                     print("\n[STATE] Lock → APPROACH")
                     mode = "APPROACH"
 
                 # Steering & motion
-                px.XXXXXXX(steer_cmd)       # How to set directional servo (Steering servo) angle?
+                px.set_dir_servo_angle(steer_cmd)       # How to set directional servo (Steering servo) angle?
                 if rel_area >= AREA_NEAR_THRESH:
                     # close enough → stop and re-center camera
                     print(f"[APPROACH] CLOSE: area={rel_area:.2f} steer={steer_cmd} label={target.get('label')}")
@@ -166,9 +166,9 @@ def main():
                     px.set_cam_pan_angle(cur_pan)
                     cur_pan += pan_dir * PAN_STEP_DEG
                     if cur_pan >= PAN_MAX:
-                        cur_pan = PAN_MAX; pan_dir = XX
+                        cur_pan = PAN_MAX; pan_dir = -1
                     elif cur_pan <= PAN_MIN:
-                        cur_pan = PAN_MIN; pan_dir = XX    # How to switch robot camera pan direction when reach max min angle?
+                        cur_pan = PAN_MIN; pan_dir = +1    # How to switch robot camera pan direction when reach max min angle?
 
             # pacing
             dt = time.time() - loop_t0
