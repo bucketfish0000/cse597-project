@@ -34,7 +34,7 @@ def predict(image: UploadFile = File(...)):
         contents = image.file.read() 
         np_arr = np.frombuffer(contents, np.uint8)
 
-        image_bgr = cv2.imdeconde(np_arr, cv2.IMREAD_COLOR)
+        image_bgr = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
         if image_bgr is None:
             raise HTTPException(status_code=422, detail="Could not decode image.")
         

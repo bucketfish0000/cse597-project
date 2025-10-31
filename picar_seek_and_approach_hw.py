@@ -43,7 +43,7 @@ def vilib_take_photo(path_dir=PHOTO_DIR):
 
 def post_image_to_api(jpg_path):
     with open(jpg_path, "rb") as f:
-        r = requests.post(API_URL, files={"file": (os.path.basename(jpg_path), f, "image/jpeg")}, timeout=5)
+        r = requests.post(API_URL, files={"image": (os.path.basename(jpg_path), f, "image/jpeg")}, timeout=5)
     r.raise_for_status()
     return r.json()
 
